@@ -19,7 +19,29 @@ const USER_MSP_DIR = path.join(
 );
 
 function loadConnectionProfile() {
-  return JSON.parse(fs.readFileSync(CCP_PATH, 'utf8'));
+  if (fs.existsSync(CCP_PATH)) {
+    return JSON.parse(fs.readFileSync(CCP_PATH, 'utf8'));
+  }
+
+  // Check alternative paths if running inside Docker with different mount layouts
+  const altPaths = [
+    path.resolve(__dirname, '..', '..', 'connection-profiles', 'lab-connection.json'),
+    path.resolve('/connection-profiles/lab-connection.json'),
+    path.resolve('/orgs/lab/EHR-LABORG-main/connection-profiles/lab-connection.json'),
+  ];
+
+  for (const altPath of altPaths) {
+    if (fs.existsSync(altPath)) {
+      return JSON.parse(fs.readFileSync(altPath, 'utf8'));
+    }
+  }
+
+  return {
+    name: 'lab-network',
+    peers: {
+      'peer0.lab.example.com': { url: 'grpcs://localhost:7051' },
+    },
+  };
 }
 
 function listGatewayPeers() {

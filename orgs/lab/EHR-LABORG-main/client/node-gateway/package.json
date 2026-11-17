@@ -7,7 +7,9 @@
   "type": "commonjs",
   "scripts": {
     "start": "node index.js",
-    "web": "node server.js"
+    "web": "node server.js",
+    "test:agent": "node agents/lab-agent.test.js",
+    "demo:agent": "node agents/demo-lab-agent.js"
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.10.0",

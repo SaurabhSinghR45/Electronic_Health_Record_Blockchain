@@ -3,9 +3,11 @@
 const crypto = require('crypto');
 
 function getIpfsConfig() {
+  const defaultApi = process.env.IPFS_HOST ? `http://${process.env.IPFS_HOST}:5001` : 'http://ipfs.ehr.local:5001';
+  const defaultGateway = process.env.IPFS_HOST ? `http://${process.env.IPFS_HOST}:8080` : 'http://ipfs.ehr.local:8080';
   return {
-    apiUrl: (process.env.IPFS_API_URL || 'http://10.166.46.138:5001').replace(/\/$/, ''),
-    gatewayUrl: (process.env.IPFS_GATEWAY_URL || 'http://10.166.46.138:8080').replace(/\/$/, ''),
+    apiUrl: (process.env.IPFS_API_URL || defaultApi).replace(/\/$/, ''),
+    gatewayUrl: (process.env.IPFS_GATEWAY_URL || defaultGateway).replace(/\/$/, ''),
   };
 }
 

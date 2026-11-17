@@ -248,15 +248,19 @@ function fallbackDecisionSupport(patientHistory, reportText) {
   };
 }
 
-function buildLabReportPrompt({ resultData, testCode, patientId, reportText, reportTextSource }) {
+function buildLabReportPrompt({ resultData, testCode, patientId, reportText, reportTextSource, requestFindings = false }) {
   const preparedReportText = trimReportTextForPrompt(reportText);
+
+  const keysPrompt = requestFindings
+    ? 'summary (string), abnormalities (array of strings), riskFlags (array of strings), confidence (high|medium|low), findings (array of objects with { test: string, value: number|string, unit: string, referenceRange: string, interpretation: "normal"|"below_reference"|"above_reference"|"abnormal"|"inconclusive", evidence: string (verbatim exact excerpt from report text/data or null) }).'
+    : 'summary (string), abnormalities (array of strings), riskFlags (array of strings), confidence (high|medium|low).';
 
   return [
     'You are a clinical lab analysis assistant.',
     'Analyze lab result payload and identify possible abnormalities.',
     'If reportExtractedText is present, treat it as OCR/text extracted from an uploaded PDF/image lab report and use it as additional context.',
     'Return strict JSON with keys:',
-    'summary (string), abnormalities (array of strings), riskFlags (array of strings), confidence (high|medium|low).',
+    keysPrompt,
     'Keep it concise and non-diagnostic. Mention uncertainty where relevant.',
     `patientId: ${patientId || ''}`,
     `testCode: ${testCode || ''}`,
@@ -292,7 +296,7 @@ function buildDecisionSupportPrompt({
   ].join('\n');
 }
 
-async function runLabReportAnalysisAgent({ resultData, testCode, patientId, reportText, reportTextSource }) {
+async function runLabReportAnalysisAgent({ resultData, testCode, patientId, reportText, reportTextSource, requestFindings = false }) {
   const systemInstruction =
     'You support clinicians by summarizing abnormalities. You are not a decision-maker.';
 
@@ -304,12 +308,13 @@ async function runLabReportAnalysisAgent({ resultData, testCode, patientId, repo
       patientId,
       reportText,
       reportTextSource,
+      requestFindings,
     }),
     temperature: 0.2,
   });
   const aiOutput = result.data;
 
-  return {
+  const response = {
     modelUsed: result.modelUsed,
     summary: String(aiOutput.summary || '').trim() || 'No summary generated.',
     abnormalities: normalizeToArray(aiOutput.abnormalities).map((item) => String(item)),
@@ -317,6 +322,12 @@ async function runLabReportAnalysisAgent({ resultData, testCode, patientId, repo
     confidence: String(aiOutput.confidence || 'low').toLowerCase(),
     source: 'gemini',
   };
+
+  if (aiOutput.findings) {
+    response.findings = normalizeToArray(aiOutput.findings);
+  }
+
+  return response;
 }
 
 async function runClinicalDecisionSupportAgent({
@@ -432,5 +443,14 @@ async function runAgenticClinicalAnalysis({
 
 module.exports = {
   getAiAgentConfig,
+  callGeminiJson,
+  buildLabReportPrompt,
+  fallbackLabReportAnalysis,
+  runLabReportAnalysisAgent,
+  runClinicalDecisionSupportAgent,
   runAgenticClinicalAnalysis,
+  normalizeReportText,
+  trimReportTextForPrompt,
+  toSafeJson,
+  normalizeToArray,
 };

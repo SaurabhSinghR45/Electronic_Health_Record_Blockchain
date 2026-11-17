@@ -11,6 +11,9 @@ const {
   getAiAgentConfig,
   runAgenticClinicalAnalysis,
 } = require('./ai-agent');
+const labAgent = require('./agents/lab-agent');
+const { mockReports } = require('./agents/mock-data');
+const { AgentContext, AgentResult, AgentStatus } = require('./orchestrator/agent-contract');
 const {
   createLabResult,
   getAllLabResults,
@@ -203,6 +206,74 @@ app.get('/api/ipfs/json/:cid', async (req, res, next) => {
   }
 });
 
+// ── Team 6 Agentic AI Routes: Lab Report Analysis Agent (Saurabh Singh) ──
+app.get('/api/agents/lab/health', (_req, res) => {
+  const aiConfig = getAiAgentConfig();
+  res.json({
+    ok: true,
+    agentId: 'lab-agent',
+    status: 'ACTIVE',
+    team: 'Team 6 (Md Jabed Ansari, Saurabh Singh, Mohd Abdullah Khan)',
+    author: 'Saurabh Singh',
+    role: 'Lab Report Ingestion & Abnormality Triage Agent (Module A)',
+    features: [
+      'Evidence Grounding (Novelty 1: Verbatim excerpt verification)',
+      'Deterministic Contradiction Validator (Novelty 2: Range & assertion guardrail)',
+      'Gemini Cascade & Offline Heuristic Fallback',
+      'Common Agent Contract (AgentContext / AgentResult) compliance',
+    ],
+    aiConfig: {
+      provider: aiConfig.provider,
+      model: aiConfig.model,
+      configured: aiConfig.configured,
+    },
+  });
+});
+
+app.post('/api/agents/lab/analyze', async (req, res, next) => {
+  try {
+    const context = req.body || {};
+    const agentResult = await labAgent.execute(context);
+
+    let ipfsResult = null;
+    if (req.body && req.body.persistToIpfs) {
+      try {
+        ipfsResult = await addJsonToIpfs(agentResult, {
+          fileName: `${agentResult.metadata.runId || 'run'}-lab-agent-result.json`,
+        });
+      } catch (ipfsError) {
+        agentResult.errors = agentResult.errors || [];
+        agentResult.errors.push(`IPFS persistence warning: ${ipfsError.message}`);
+      }
+    }
+
+    res.json({
+      ok: agentResult.status !== 'ERROR',
+      agentResult,
+      ipfs: ipfsResult,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/agents/lab/demo', async (req, res, next) => {
+  try {
+    const scenarioKey = req.query.scenario || 'test2_lowHemoglobin';
+    const payload = mockReports[scenarioKey] || mockReports.test2_lowHemoglobin;
+    const result = await labAgent.execute(payload);
+
+    res.json({
+      scenarioKey,
+      availableScenarios: Object.keys(mockReports),
+      input: payload,
+      result,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.post('/api/ai/analyze', async (req, res, next) => {
   try {
     if (!Object.prototype.hasOwnProperty.call(req.body || {}, 'resultData')) {
@@ -224,14 +295,26 @@ app.post('/api/ai/analyze', async (req, res, next) => {
       }
     }
 
-    const ai = await runAgenticClinicalAnalysis({
-      resultData: req.body.resultData,
-      testCode: req.body.testCode,
-      patientId: req.body.patientId,
-      patientHistory,
-      reportText: req.body.reportText,
-      reportTextSource: req.body.reportTextSource,
-    });
+    const [ai, labAgentResult] = await Promise.all([
+      runAgenticClinicalAnalysis({
+        resultData: req.body.resultData,
+        testCode: req.body.testCode,
+        patientId: req.body.patientId,
+        patientHistory,
+        reportText: req.body.reportText,
+        reportTextSource: req.body.reportTextSource,
+      }),
+      labAgent.execute({
+        runId: req.body.runId || `RUN-${Date.now()}`,
+        patientId: req.body.patientId,
+        input: {
+          resultData: req.body.resultData,
+          testCode: req.body.testCode,
+          reportText: req.body.reportText,
+          reportTextSource: req.body.reportTextSource,
+        },
+      }),
+    ]);
 
     let aiIpfs = null;
     if (req.body.persistToIpfs !== false) {
@@ -245,6 +328,7 @@ app.post('/api/ai/analyze', async (req, res, next) => {
       historyCount: patientHistory.length,
       warnings,
       ai,
+      labAgentResult,
       aiIpfs,
     });
   } catch (error) {
