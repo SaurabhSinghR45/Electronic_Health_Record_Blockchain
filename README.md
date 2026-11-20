@@ -11,14 +11,55 @@
 
 ---
 
-### 👨‍💻 Project Repository & Academic Credentials
+### 👨‍💻 Candidate & Academic Credentials (Student Fork)
 
-* **Repository URL:** [https://github.com/devbyhimans/Electronic_Health_Record_Blockchain.git](https://github.com/devbyhimans/Electronic_Health_Record_Blockchain.git)
-* **Lead System Architect & Core Orchestrator:** **Himanshu**
-* **Roll Number:** **24MCF1R16**
-* **Department:** Master of Computer Applications (MCA 3rd Year)
+* **Candidate / Student:** **Saurabh Singh**
+* **Roll Number:** **24MCF1R45**
+* **Department:** Master of Computer Applications (MCA 2024–2026)
 * **Institution:** National Institute of Technology (NIT), Warangal
-* **Pillar Focus:** Real-Time Blockchain Event Architecture, Master Container Orchestration (`./start.sh` / `./stop.sh`), Nginx API Gateway, Unified Pharmacy Suite, and Zero-PHI Data Streaming Pipeline.
+* **Team:** **Team 6** (Md Jabed Ansari / Javed [Lead], Saurabh Singh, Mohd Abdullah Khan)
+* **Assigned Module:** **Module A: Lab Report Ingestion, Evidence Grounding & Abnormality Triage Agent (LabMSP)**
+* **Student Fork Repository:** [https://github.com/SaurabhSinghR45/Electronic_Health_Record_Blockchain](https://github.com/SaurabhSinghR45/Electronic_Health_Record_Blockchain)
+* **Designated Branch:** [`saurabh/lab-agent`](https://github.com/SaurabhSinghR45/Electronic_Health_Record_Blockchain/tree/saurabh/lab-agent)
+* **Upstream Lead Repository:** [https://github.com/devbyhimans/Electronic_Health_Record_Blockchain.git](https://github.com/devbyhimans/Electronic_Health_Record_Blockchain.git)
+* **Project Lead Architect:** **Himanshu** (Roll: `24MCF1R16`, NIT Warangal)
+* **Integration & Merge Status:** **Pull Request #9 Merged into Upstream Master** (`f95c950` &rarr; `devbyhimans:main`)
+
+---
+
+## 🔬 Saurabh Singh's Contribution — Module A: Lab Report Analysis & Triage Agent
+
+### 1. Overview & Problem Addressed
+As part of **Team 6**, Saurabh Singh authored **Module A**, the intelligent laboratory report ingestion, evidence grounding, and abnormality triaging pipeline residing in:
+[`orgs/lab/EHR-LABORG-main/client/node-gateway/agents/lab-agent.js`](orgs/lab/EHR-LABORG-main/client/node-gateway/agents/lab-agent.js)
+
+In high-throughput clinical EHR systems, diagnostic reports arrive in heterogeneous formats: structured JSON, unstructured narrative PDFs, and noisy OCR scans. Large Language Models (LLMs) applied naively to clinical data suffer from generative hallucinations and misinterpret critical reference ranges. Module A solves this via two deterministic, verifiable mechanisms:
+
+### 2. Core Innovations (Novelties)
+1. **Novelty 1: Verbatim Evidence Grounding (`findVerbatimEvidence`)**
+   Every extracted numerical test parameter (e.g., Hemoglobin $9.2\text{ g/dL}$) is algorithmically searched and anchored to its exact source line in the diagnostic narrative (`evidenceGrounding`). If an extracted value cannot be anchored to an authentic line, it is safely purged, guaranteeing zero generative fabrication.
+2. **Novelty 2: Deterministic Reference Range & Contradiction Validator (`validateLabFindings`)**
+   A mathematical rule engine deterministically extracts interval bounds $[R_{low}, R_{high}]$ and compares measured values:
+   $$v < R_{low} \implies \text{below\_reference}, \quad v > R_{high} \implies \text{above\_reference}, \quad R_{low} \le v \le R_{high} \implies \text{normal}$$
+   If an AI model misclassifies an out-of-range value (e.g., calling $9.2\text{ g/dL}$ "normal" when reference is $13.5-17.5\text{ g/dL}$), the validator catches the discrepancy, overrides it to `below_reference`, flags a **Contradiction Fault**, and downgrades model confidence to `medium`.
+
+### 3. Architecture, IPFS & Blockchain Handoff
+* **Contract-First Design:** Follows `orchestrator/agent-contract.js`, returning standardized `AgentResult` schemas for handoff to downstream agents (`history-agent`, `clinical-agent`).
+* **Decentralized Storage:** Anchors agent summary JSON payloads to the local **IPFS Kubo cluster**, generating immutable CIDs (`bafkreif...`).
+* **On-Chain Ledger Recording:** Cryptographic CIDs and metadata are recorded on the **Hyperledger Fabric v2.5** ledger via the `LabResultsContract` on channel `ehrchannel`.
+* **Offline Resilience:** Operates with zero external npm dependencies, using a heuristic cascade (`runFallbackAnalysis`) when network access or LLM APIs are unavailable.
+
+### ⚡ Quick Verification Commands (Module A)
+
+Evaluators can verify Saurabh Singh's complete module and unit test suite directly using Node.js:
+
+```bash
+# 1. Run the comprehensive 10-point automated test suite (10/10 PASS)
+node orgs/lab/EHR-LABORG-main/client/node-gateway/agents/lab-agent.test.js
+
+# 2. Run the interactive multi-scenario standalone demonstration
+node orgs/lab/EHR-LABORG-main/client/node-gateway/agents/demo-lab-agent.js
+```
 
 ---
 
@@ -383,6 +424,8 @@ EHR_blockchain/
 
 For detailed architectural specifications, performance benchmarks, and evaluation reports:
 
+* 🔬 [Saurabh Singh's Lab Report Ingestion Agent (Module A)](orgs/lab/EHR-LABORG-main/client/node-gateway/agents/lab-agent.md) *(Candidate Module Documentation)*
+* 📄 [Decentralized EHR System Comprehensive Project Report (Saurabh Singh)](PROJECT_REPORT_LAB_AGENT_EHR.md) *(Academic PBL Report)*
 * 🧭 [Master Documentation Directory & Index](docs/README.md)
 * 🧪 [Complete Evaluation & Benchmark Viva Guide](docs/guides/EHR_BLOCKCHAIN_COMPLETE_EVALUATION_GUIDE.md)
 * 👨‍💻 [Author Engineering Contribution Walkthrough](docs/reports/MY_CONTRIBUTION.md)
@@ -405,4 +448,5 @@ For detailed architectural specifications, performance benchmarks, and evaluatio
 
 ---
 
-*Maintained by **Himanshu (24MCF1R16)** — Master of Computer Applications, National Institute of Technology, Warangal.*
+*Fork maintained by **Saurabh Singh (24MCF1R45)** — Team 6 (Module A), Master of Computer Applications, National Institute of Technology, Warangal.*  
+*Upstream Core maintained by **Himanshu (24MCF1R16)** — Project Lead Architect.*
